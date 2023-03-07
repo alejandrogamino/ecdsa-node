@@ -4,8 +4,10 @@ import "./App.scss";
 import { useState } from "react";
 
 function App() {
-  const [balance, setBalance] = useState(0);
+  const [balance, setBalance] = useState("INPUT VALID CREDENTIALS");
   const [address, setAddress] = useState("");
+  const [signature, setSignature] = useState("");
+  const [recoveryBit, setRecoveryBit] = useState("");
 
   return (
     <div className="app">
@@ -14,6 +16,10 @@ function App() {
         setBalance={setBalance}
         address={address}
         setAddress={setAddress}
+        signature={signature}
+        setSignature={setSignature}
+        recoveryBit={recoveryBit}
+        setRecoveryBit={setRecoveryBit}
       />
       <Transfer setBalance={setBalance} address={address} />
     </div>
