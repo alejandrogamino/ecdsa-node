@@ -9,6 +9,8 @@ function Wallet({
   setBalance,
   recoveryBit,
   setRecoveryBit,
+  nonce,
+  setNonce,
 }) {
   function onAddressChange(evt) {
     const address = evt.target.value;
@@ -32,9 +34,10 @@ function Wallet({
     ) {
       let rcvBit = Number(recoveryBit) || 0;
       const {
-        data: { balance },
+        data: [balance, nonce],
       } = await server.get(`verify/${address}/${signature}/${rcvBit}`); ///verify/:address/:signature/:recoveryBit
       setBalance(balance);
+      setNonce(nonce);
     } else {
     }
   }

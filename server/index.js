@@ -42,11 +42,20 @@ const balances = {
   "4b395563a2fb2e9649c5513a5203eda725b251d7": 15,
 };
 
-app.get("/balance/:address", (req, res) => {
-  const { address } = req.params;
-  const balance = balances[address] || 0;
-  res.send({ balance });
-});
+const nonces = {
+  "7c87c31a306342c84a14f196fbf9931fd27472fb": 0,
+  "7fabf57fea536022befd1fc5e5ec43c22dc904af": 0,
+  "619562f9fa10cf1dfd1161cb73c9b520b791e995": 0,
+  "2ea60e836ba31dbcf7502ad1f5a1addb029b11ff": 0,
+  "70f30f6c621ec34df617b6a9b553f1f84d1d47f9": 0,
+  "4b395563a2fb2e9649c5513a5203eda725b251d7": 0,
+};
+
+// app.get("/balance/:address", (req, res) => {
+//   const { address } = req.params;
+//   const balance = balances[address] || 0;
+//   res.send({ balance });
+// });
 
 app.get("/verify/:address/:signature/:recoveryBit", (req, res) => {
   const { address } = req.params;
@@ -59,13 +68,14 @@ app.get("/verify/:address/:signature/:recoveryBit", (req, res) => {
       recoveredPublicKey = publicKey;
       recoveredPublicKey = toHex(recoveredPublicKey);
       const storedPublicKey = publicKeys[address] || 0;
-      let balance = "INPUT VALID CREDENTIALS";
+      let balance = 0;
+      let nonce = 0;
       if (recoveredPublicKey && recoveredPublicKey === storedPublicKey) {
-        balance = balances[address] || "INPUT VALID CREDENTIALS";
-        res.send({ balance });
-      } else {
-        res.send({ balance });
+        balance = balances[address] || 0;
+        // nonces[address] += 1;
+        nonce = nonces[address];
       }
+      res.send([balance, nonce]);
     }
     // (reason) => {
     //   console.log(reason);
@@ -74,17 +84,27 @@ app.get("/verify/:address/:signature/:recoveryBit", (req, res) => {
 });
 
 app.post("/send", (req, res) => {
-  const { sender, recipient, amount } = req.body;
+  const { sender, recipient, amount, nonce, signedMessage } = req.body;
+  const message =
+    sender.trim() + parseInt(amount) + recipient.trim() + parseInt(nonce);
+  const hashedMessage = toHex(hashMessage(message));
+  const publicKey = publicKeys[sender];
 
-  setInitialBalance(sender);
-  setInitialBalance(recipient);
+  result = secp.verify(signedMessage, hashedMessage, publicKey);
+  if (result === true) {
+    setInitialBalance(sender);
+    setInitialBalance(recipient);
 
-  if (balances[sender] < amount) {
-    res.status(400).send({ message: "Not enough funds!" });
+    if (balances[sender] < amount) {
+      res.status(400).send({ message: "Not enough funds!" });
+    } else {
+      balances[sender] -= amount;
+      balances[recipient] += amount;
+      nonces[sender] += 1;
+      res.send([balances[sender], nonces[sender]]);
+    }
   } else {
-    balances[sender] -= amount;
-    balances[recipient] += amount;
-    res.send({ balance: balances[sender] });
+    res.status(401).send({ message: "Wrong signature!" });
   }
 });
 
